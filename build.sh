@@ -41,8 +41,8 @@ popd # coreutils-${coreutils_version}
 
 popd # build
 
-if [ ! -d releases ]; then
-  mkdir releases
+if [ ! -d dist ]; then
+  mkdir dist
 fi
 
 echo "= strip & compress"
@@ -56,6 +56,6 @@ done < <(ls "build/coreutils-${coreutils_version}/src/"!(*.*))
 set -e
 
 echo "= extracting coreutils binary"
-cp build/coreutils-${coreutils_version}/src/!(*.*) releases
+cp build/coreutils-${coreutils_version}/src/!(*.*) dist
 
 echo "= done"
