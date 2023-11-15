@@ -52,10 +52,10 @@ while read -r file
 do
   strip -s -R .comment -R .gnu.version --strip-unneeded "$file"
 	upx --ultra-brute "$file"
-done < <(ls "build/coreutils-${coreutils_version}/src/"!(*.*))
+done < <(find "build/coreutils-8.28/src/" -type f -executable)
 set -e
 
 echo "= extracting coreutils binary"
-cp build/coreutils-${coreutils_version}/src/!(*.*) dist
+find "build/coreutils-8.28/src/" -type f -executable -exec cp '{}' dist \;
 
 echo "= done"
