@@ -5,10 +5,9 @@
 #
 # For Linux, also builds musl for truly static linking.
 
-coreutils_version="8.28"
-musl_version="1.1.15"
+set -e
 
-platform=$(uname -s)
+coreutils_version="8.28"
 
 if [ -d build ]; then
   echo "= removing previous build directory"
@@ -25,30 +24,13 @@ curl -LO http://ftp.gnu.org/gnu/coreutils/coreutils-${coreutils_version}.tar.xz
 echo "= extracting coreutils"
 tar xJf coreutils-${coreutils_version}.tar.xz
 
-if [ "$platform" = "Linux" ]; then
-  echo "= downloading musl"
-  curl -LO http://www.musl-libc.org/releases/musl-${musl_version}.tar.gz
-
-  echo "= extracting musl"
-  tar -xf musl-${musl_version}.tar.gz
-
-  echo "= building musl"
-  working_dir=$(pwd)
-
-  install_dir=${working_dir}/musl-install
-
-  pushd musl-${musl_version}
-  env CFLAGS="$CFLAGS -Os -ffunction-sections -fdata-sections" LDFLAGS='-Wl,--gc-sections' ./configure --prefix=${install_dir}
-  make install
-  popd # musl-${musl-version}
-
-  echo "= setting CC to musl-gcc"
-  export CC=${working_dir}/musl-install/bin/musl-gcc
-  export CFLAGS="-static"
-else
-  echo "= WARNING: your platform does not support static binaries."
-  echo "= (This is mainly due to non-static libc availability.)"
+if ! [[ "$(cat /etc/*-release)" =~ alpine ]]; then
+  echo "Please build on alpine linux"
 fi
+
+echo "= setting CC to musl-gcc"
+export CC=gcc
+export CFLAGS="-static"
 
 echo "= building coreutils"
 
@@ -63,15 +45,17 @@ if [ ! -d releases ]; then
   mkdir releases
 fi
 
-echo "= striptease"
-strip -s -R .comment -R .gnu.version --strip-unneeded build/coreutils-${coreutils_version}/coreutils
-echo "= compressing"
-
+echo "= strip & compress"
 shopt -s extglob
-for file in build/coreutils-${coreutils_version}/src/!(*.*)
+set +e
+while read -r file
 do
-	upx --ultra-brute $file
-done
+  strip -s -R .comment -R .gnu.version --strip-unneeded "$file"
+	upx --ultra-brute "$file"
+done < <(ls "build/coreutils-${coreutils_version}/src/"!(*.*))
+set -e
+
 echo "= extracting coreutils binary"
 cp build/coreutils-${coreutils_version}/src/!(*.*) releases
+
 echo "= done"
